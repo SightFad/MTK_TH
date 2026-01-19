@@ -1,0 +1,3 @@
+[19-01-2026 15:02:45] AuthController initialized.
+[19-01-2026 15:02:46] Email sent to Khoa@gmail.com: Registration successful.
+[19-01-2026 15:02:46] User string registered successfully.
