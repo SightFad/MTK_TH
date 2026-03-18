@@ -46,6 +46,8 @@ builder.Services.AddTransient<IOrderBuilder, OrderBuilder>();
 // A choice has to be made for the default notification factory
 builder.Services.AddTransient<INotificationFactory, EmailNotificationFactory>();
 
+builder.Services.AddScoped<IObserver, NotificationObserver>();
+
 // Adapter Pattern (VNPay SDK -> IPaymentService)
 builder.Services.AddSingleton<VnPaySdk>();
 builder.Services.AddScoped<IPaymentService, VnPayAdapter>();

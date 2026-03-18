@@ -4,23 +4,54 @@ using TH1.Repositories;
 using TH1.Patterns.Builder;
 using TH1.Patterns.AbstractFactory;
 using TH1.Patterns.Singleton;
+using TH1.Patterns.Observer;
 
 namespace TH1.Services
 {
-    public class OrderService : IOrderService
+    public class OrderService : IOrderService, ISubject
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IProductRepository _productRepository;
         private readonly IOrderBuilder _orderBuilder;
-        private readonly INotificationFactory _notificationFactory;
 
+        private readonly List<IObserver> _observers = new List<IObserver>();
 
-        public OrderService(IOrderRepository orderRepository, IProductRepository productRepository, IOrderBuilder orderBuilder, INotificationFactory notificationFactory)
+        public OrderService(
+            IOrderRepository orderRepository, 
+            IProductRepository productRepository, 
+            IOrderBuilder orderBuilder, 
+            IEnumerable<IObserver> injectedObservers) // Tự động lấy các Observer từ DI
         {
             _orderRepository = orderRepository;
             _productRepository = productRepository;
             _orderBuilder = orderBuilder;
-            _notificationFactory = notificationFactory;
+
+            // 1. Gắn các Observer được quản lý bởi DI (ví dụ: NotificationObserver)
+            foreach (var observer in injectedObservers)
+            {
+                Attach(observer);
+            }
+
+            // 2. Gắn thủ công LoggerService (vì nó là Singleton tĩnh, không qua DI)
+            Attach(LoggerService.Instance);
+        }
+
+        public void Attach(IObserver observer)
+        {
+            if (!_observers.Contains(observer)) _observers.Add(observer);
+        }
+
+        public void Detach(IObserver observer)
+        {
+            _observers.Remove(observer);
+        }
+
+        public void Notify(string message)
+        {
+            foreach (var observer in _observers)
+            {
+                observer.Update(message);
+            }
         }
 
         public Task<OrderDto> CreateOrder(int userId, CreateOrderDto createOrderDto)
@@ -32,7 +63,8 @@ namespace TH1.Services
                 .SetOrderItems(createOrderDto.OrderItems)
                 .Build();
 
-            // Trả về đơn hàng đã tính tổng (Decorator sẽ bọc thêm VAT nếu được cấu hình).
+            Notify(userId, $"Đơn hàng mới đã được tạo với tổng giá trị: {order.TotalPrice}.");
+
             return Task.FromResult(new OrderDto
             {
                 OrderId = 0,
