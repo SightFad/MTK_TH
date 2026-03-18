@@ -46,11 +46,11 @@ namespace TH1.Services
             _observers.Remove(observer);
         }
 
-        public void Notify(string message)
+        public void Notify(int userId, string message) 
         {
             foreach (var observer in _observers)
             {
-                observer.Update(message);
+                observer.Update(userId, message);
             }
         }
 
