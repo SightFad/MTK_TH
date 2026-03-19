@@ -5,13 +5,9 @@ namespace TH1.DTOs
 {
     public class CreateOrderDto
     {
-        [Required]
-        public string ShippingAddress { get; set; } = string.Empty;
-
-        [Required]
-        public string PaymentMethod { get; set; } = string.Empty; // "Cash", "Paypal", "VNPay"
-
-        [Required]
-        public List<OrderItemDto> OrderItems { get; set; } = new List<OrderItemDto>();
+        public string ShippingAddress { get; set; }
+        public string PaymentMethod { get; set; }
+        public string? PromoCode { get; set; } // Thêm trường này
+        public List<OrderItemDto> OrderItems { get; set; }
     }
 }

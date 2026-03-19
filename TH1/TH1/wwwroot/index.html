@@ -70,7 +70,6 @@
   </style>
 </head>
 <body class="bg-light">
-  <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
     <div class="container">
       <a class="navbar-brand" href="#">
@@ -79,36 +78,37 @@
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
         <span class="navbar-toggler-icon"></span>
       </button>
+      
       <div class="collapse navbar-collapse" id="navMain">
         <ul class="navbar-nav me-auto">
           <li class="nav-item">
             <a class="nav-link active" href="#products">Sản phẩm</a>
           </li>
         </ul>
-        <div class="d-flex align-items-center gap-3">
-          <!-- Login -->
+        
+        <div class="d-flex align-items-center gap-3 mt-3 mt-lg-0">
           <div class="dropdown" id="loginDropdown">
             <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
               <i class="bi bi-person me-1"></i>
               <span id="userLabel">Đăng nhập</span>
             </button>
-            <div class="dropdown-menu dropdown-menu-end p-3">
+            <div class="dropdown-menu dropdown-menu-end p-3" style="width: 250px;">
               <div class="mb-2">
                 <label class="form-label small">Username</label>
-                <input id="username" class="form-control form-control-sm" placeholder="user1" />
+                <input id="username" class="form-control form-control-sm" placeholder="Nhập username..." />
               </div>
               <div class="mb-2">
                 <label class="form-label small">Password</label>
                 <input id="password" type="password" class="form-control form-control-sm" placeholder="••••••" />
               </div>
-              <div class="d-flex gap-1">
+              <div class="d-flex gap-2 mt-3">
                 <button id="btnLogin" class="btn btn-primary btn-sm flex-grow-1">Đăng nhập</button>
                 <button id="btnLogout" class="btn btn-outline-secondary btn-sm">Thoát</button>
               </div>
-              <div id="authMsg" class="mt-2 small"></div>
+              <div id="authMsg" class="mt-2 small text-center"></div>
             </div>
           </div>
-          <!-- Cart -->
+          
           <button class="btn btn-outline-light position-relative" type="button" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
             <i class="bi bi-cart3 me-1"></i>Giỏ hàng
             <span id="cartCountBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
@@ -118,12 +118,11 @@
     </div>
   </nav>
 
-  <!-- Main Content -->
   <main class="container py-4">
-    <section id="products" class="mb-4">
+    <section id="products" class="mb-5">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="h4 mb-0">
-          <i class="bi bi-grid-3x3-gap me-2"></i>Sản phẩm
+          <i class="bi bi-grid-3x3-gap me-2"></i>Danh sách Sản phẩm
         </h2>
         <button id="btnReloadProducts" class="btn btn-outline-primary btn-sm">
           <i class="bi bi-arrow-clockwise me-1"></i>Tải lại
@@ -134,53 +133,63 @@
       </div>
     </section>
 
-    <!-- Order Summary / Invoice (sau khi đặt hàng) -->
-    <section id="orderSection" class="d-none">
+    <section id="orderSection" class="d-none mt-5">
       <div class="card shadow-sm border-0">
-        <div class="card-header bg-white py-3">
-          <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Hóa đơn đặt hàng</h5>
+        <div class="card-header bg-white py-3 border-bottom-0">
+          <h5 class="mb-0 text-center text-md-start"><i class="bi bi-receipt me-2"></i>Hóa đơn đặt hàng thành công</h5>
         </div>
-        <div class="card-body">
+        <div class="card-body bg-light">
           <div id="orderSummaryEmpty" class="text-center text-secondary py-4">
             Chưa có đơn hàng. Hãy thêm sản phẩm vào giỏ và tiến hành thanh toán.
           </div>
           <div id="orderSummaryContent" class="d-none">
-            <div class="invoice-box">
+            <div class="invoice-box shadow-sm bg-white">
               <div class="text-center mb-4">
                 <h4 class="text-primary mb-1">Modern Shop</h4>
-                <small class="text-muted">Hóa đơn đặt hàng</small>
+                <small class="text-muted">Biên lai thanh toán</small>
               </div>
-              <div class="invoice-divider"></div>
-              <div class="d-flex justify-content-between mb-2">
-                <span class="text-muted">Mã đơn hàng</span>
+              
+              <div class="d-flex justify-content-between mb-2 small">
+                <span class="text-muted">Mã đơn hàng:</span>
                 <strong id="summaryOrderId">-</strong>
               </div>
-              <div class="d-flex justify-content-between mb-2">
-                <span class="text-muted">Ngày đặt</span>
+              <div class="d-flex justify-content-between mb-2 small">
+                <span class="text-muted">Ngày đặt:</span>
                 <span id="summaryOrderDate">-</span>
               </div>
+              <div class="d-flex justify-content-between mb-2 small">
+                <span class="text-muted">Thanh toán qua:</span>
+                <span id="summaryPayment">-</span>
+              </div>
+              
               <div class="invoice-divider"></div>
-              <div class="mb-2">
-                <div class="d-flex justify-content-between align-items-baseline">
-                  <span>Tổng thanh toán</span>
-                  <span class="fs-5 fw-bold text-success" id="summaryTotal">0 ₫</span>
-                </div>
-                <div class="pattern-note">Giá đã bao gồm VAT/Giảm giá (Áp dụng bởi Decorator)</div>
-              </div>
-              <div class="mb-2">
-                <div class="d-flex justify-content-between">
-                  <span>Phương thức</span>
-                  <span id="summaryPayment">VNPay</span>
-                </div>
-                <div class="pattern-note">Giao dịch qua cổng VNPay (Xử lý bởi Adapter)</div>
-              </div>
-              <div class="invoice-divider"></div>
-              <div class="text-center small text-muted">
-                Toàn bộ đơn hàng được đóng gói qua OrderFacade
-              </div>
-              <div class="mt-3">
-                <h6 class="small text-uppercase text-muted mb-2">Chi tiết đơn hàng</h6>
+              
+              <div class="mt-3 mb-3">
+                <h6 class="small text-uppercase text-muted fw-bold mb-2">Chi tiết sản phẩm</h6>
                 <div id="invoiceItems" class="small"></div>
+              </div>
+
+              <div class="invoice-divider"></div>
+              
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Tạm tính (Giá gốc)</span>
+                <strong id="summarySubtotal">-</strong>
+              </div>
+              <div class="d-flex justify-content-between mb-3">
+                <span class="text-success"><i class="bi bi-graph-down-arrow"></i> Giảm giá (Khuyến mãi)</span>
+                <strong class="text-success" id="summaryDiscount">0 ₫</strong>
+              </div>
+
+              <div class="p-3 bg-light rounded">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="fw-bold">Tổng thanh toán</span>
+                  <span class="fs-4 fw-bold text-primary" id="summaryTotal">0 ₫</span>
+                </div>
+                <div class="pattern-note text-end mt-1">Đã áp dụng Strategy & Decorator Pattern</div>
+              </div>
+              
+              <div class="text-center small text-muted mt-4">
+                <i class="bi bi-shield-check text-success"></i> Giao dịch được xử lý an toàn qua hệ thống Facade.
               </div>
             </div>
           </div>
@@ -189,61 +198,78 @@
     </section>
   </main>
 
-  <!-- Cart Offcanvas -->
-  <div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas">
-    <div class="offcanvas-header border-bottom">
-      <h5 class="offcanvas-title"><i class="bi bi-cart3 me-2"></i>Giỏ hàng</h5>
+  <div class="offcanvas offcanvas-end shadow" tabindex="-1" id="cartOffcanvas">
+    <div class="offcanvas-header border-bottom bg-light">
+      <h5 class="offcanvas-title fw-bold"><i class="bi bi-cart3 me-2"></i>Giỏ hàng của bạn</h5>
       <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
     </div>
-    <div class="offcanvas-body d-flex flex-column p-0">
-      <div id="cartItemsContainer" class="flex-grow-1 overflow-auto px-3 py-2">
-        <div class="text-center text-muted py-5">Giỏ hàng trống</div>
+    <div class="offcanvas-body d-flex flex-column p-0 bg-white">
+      <div id="cartItemsContainer" class="flex-grow-1 overflow-auto px-3 py-3">
+        <div class="text-center text-muted py-5">
+          <i class="bi bi-basket2 fs-1 d-block mb-3"></i>
+          Giỏ hàng đang trống
+        </div>
       </div>
-      <div class="border-top p-3 bg-light">
+      <div class="border-top p-4 bg-light mt-auto">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <span class="fw-semibold">Tạm tính</span>
-          <span class="fw-bold fs-5 text-success" id="cartTotal">0 ₫</span>
+          <span class="fw-bold text-secondary">Tạm tính</span>
+          <span class="fw-bold fs-4 text-primary" id="cartTotal">0 ₫</span>
         </div>
-        <div class="d-flex gap-2">
-          <button id="btnCartClear" class="btn btn-outline-secondary flex-grow-1">Xóa giỏ</button>
-          <button id="btnCartCheckout" class="btn btn-success flex-grow-1">
-            <i class="bi bi-credit-card me-1"></i>Tiến hành thanh toán
+        <div class="d-grid gap-2">
+          <button id="btnCartCheckout" class="btn btn-primary py-2 fw-bold">
+            <i class="bi bi-credit-card me-2"></i>Tiến hành thanh toán
           </button>
+          <button id="btnCartClear" class="btn btn-outline-secondary btn-sm">Xóa toàn bộ giỏ hàng</button>
         </div>
-        <div id="orderMsg" class="mt-2 small"></div>
+        <div id="orderMsg" class="mt-2 text-center small"></div>
       </div>
     </div>
   </div>
 
-  <!-- Checkout Modal -->
   <div class="modal fade" id="checkoutModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-truck me-2"></i>Thanh toán đơn hàng</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title fw-bold"><i class="bi bi-truck me-2"></i>Thông tin đặt hàng</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body p-4">
           <div class="mb-3">
-            <label class="form-label">Địa chỉ giao hàng</label>
-            <input id="checkoutShipping" class="form-control" placeholder="Ví dụ: 123 Nguyễn Huệ, Q.1, TP.HCM" value="HCMC - Vietnam" />
+            <label class="form-label fw-semibold text-secondary">Địa chỉ giao hàng</label>
+            <input id="checkoutShipping" class="form-control" placeholder="Nhập địa chỉ nhận hàng..." value="HCMC - Vietnam" />
           </div>
-          <div class="mb-3">
-            <label class="form-label">Phương thức thanh toán</label>
+          
+          <div class="mb-4">
+            <label class="form-label fw-semibold text-secondary">Phương thức thanh toán</label>
             <select id="checkoutPayment" class="form-select">
-              <option value="vnpay" selected>VNPay (Adapter) — Thanh toán qua cổng VNPay</option>
-              <option value="cash">Thanh toán khi nhận hàng</option>
+              <option value="vnpay" selected>VNPay — Thanh toán trực tuyến</option>
+              <option value="cash">Tiền mặt — Thanh toán khi nhận hàng</option>
               <option value="paypal">PayPal</option>
             </select>
           </div>
-          <div class="alert alert-light border small mb-0">
-            Tổng tạm tính: <strong id="checkoutSubtotalLabel">0 ₫</strong> — VAT 10% sẽ được áp dụng khi xác nhận.
+          
+          <div class="p-3 bg-light border border-primary rounded-3 mb-3">
+            <label class="form-label text-primary fw-bold mb-2">
+              <i class="bi bi-gift-fill me-1"></i> Mã khuyến mãi (Strategy Pattern)
+            </label>
+            <select id="checkoutStrategy" class="form-select border-primary shadow-sm">
+              <option value="none" selected>Không áp dụng mã giảm giá</option>
+              <option value="vip20">Thành viên VIP — Giảm 20% tổng bill</option>
+            </select>
+          </div>
+          
+          <div class="alert alert-info border-0 small mb-0 d-flex align-items-center">
+            <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+            <div>
+              Tổng tạm tính: <strong id="checkoutSubtotalLabel">0 ₫</strong>.<br>
+              VAT 10% sẽ được tính thêm vào lúc chốt đơn.
+            </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-          <button type="button" class="btn btn-primary" id="btnConfirmCheckout">
-            <i class="bi bi-check-lg me-1"></i>Xác nhận thanh toán
+        <div class="modal-footer bg-light border-top-0">
+          <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy bỏ</button>
+          <button type="button" class="btn btn-primary px-4 fw-bold" id="btnConfirmCheckout">
+            Xác nhận thanh toán <i class="bi bi-arrow-right-short"></i>
           </button>
         </div>
       </div>

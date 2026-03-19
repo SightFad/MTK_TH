@@ -51,8 +51,10 @@ builder.Services.AddTransient<INotificationFactory, EmailNotificationFactory>();
 //observer pattern
 builder.Services.AddScoped<IObserver, NotificationObserver>();
 
-//strategy pattern
-builder.Services.AddScoped<IDiscountStrategy, NoDiscount>();
+builder.Services.AddScoped<IOrderBuilder, OrderBuilder>();
+
+builder.Services.AddScoped<IOrderService>(sp => 
+    new TaxOrderDecorator(sp.GetRequiredService<OrderService>()));
 
 // Adapter Pattern (VNPay SDK -> IPaymentService)
 builder.Services.AddSingleton<VnPaySdk>();

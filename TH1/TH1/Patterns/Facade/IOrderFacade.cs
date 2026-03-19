@@ -39,9 +39,9 @@ namespace TH1.Patterns.Facade
             var steps = new List<string>();
 
             LoggerService.Instance.Log("Toàn bộ quy trình được quản lý bởi Facade");
-            steps.Add("Facade Pattern: Toàn bộ quy trình đặt hàng được điều phối bởi OrderFacade.PlaceOrderFullProcess.");
+            steps.Add("Facade Pattern: Toàn bộ quy trình đặt hàng được điều phối bởi OrderFacade.");
 
-            // 1. Kiểm tra kho bằng Repository
+            // 1. Kiểm tra kho (Giữ nguyên logic cũ)
             foreach (var item in dto.OrderItems)
             {
                 if (!await _productRepository.IsInStockAsync(item.ProductId, item.Quantity))
@@ -49,15 +49,20 @@ namespace TH1.Patterns.Facade
                     throw new Exception($"Sản phẩm ID {item.ProductId} không đủ hàng.");
                 }
             }
-            steps.Add("Repository Pattern: Đã kiểm tra tồn kho sản phẩm.");
+            steps.Add("Repository Pattern: Đã kiểm tra tồn kho.");
 
-            // 2. Sử dụng COMMAND PATTERN thay vì gọi Service trực tiếp
-            var placeOrderCmd = new PlaceOrderCommand(_orderService, userId, dto);
-            var calculatedOrder = await placeOrderCmd.ExecuteAsync();
+            // 2. SỬ DỤNG COMMAND PATTERN TẠI ĐÂY
+            // Thay vì gọi: var calculatedOrder = await _orderService.CreateOrder(userId, dto);
+            // Bạn sử dụng đối tượng Command bạn vừa tạo:
             
-            steps.Add("Command Pattern: Đã bọc yêu cầu đặt hàng qua PlaceOrderCommand.");
-            steps.Add("Builder & Strategy Pattern: Đã build đơn hàng và áp dụng giảm giá.");
-            steps.Add("Observer Pattern: NotificationObserver đã gửi tin báo đơn hàng mới.");
+            var placeOrderCommand = new PlaceOrderCommand(_orderService, userId, dto);
+            var calculatedOrder = await placeOrderCommand.ExecuteAsync(); 
+
+            // Bạn đang viết như thế này (bị lặp lại):
+            steps.Add("Command Pattern: Đã thực thi PlaceOrderCommand để xử lý đặt hàng.");
+            steps.Add("Strategy Pattern: OrderService đã tự động chọn chiến lược giảm giá từ PromoCode.");
+            steps.Add("Command Pattern: Đã bọc yêu cầu đặt hàng qua PlaceOrderCommand."); // Lặp lại
+            steps.Add("Builder & Strategy Pattern: Đã build đơn hàng và áp dụng giảm giá."); // Lặp lại nội dung
 
             // 3. Thanh toán thông qua Adapter
             var paymentResult = _paymentService.Pay(calculatedOrder.TotalPrice);

@@ -30,6 +30,9 @@
     summaryTotal: document.getElementById("summaryTotal"),
     summaryPayment: document.getElementById("summaryPayment"),
     invoiceItems: document.getElementById("invoiceItems"),
+    checkoutStrategy: document.getElementById("checkoutStrategy"),
+    summarySubtotal: document.getElementById("summarySubtotal"),
+    summaryDiscount: document.getElementById("summaryDiscount"),
   };
 
   const state = {
@@ -264,10 +267,15 @@
       return;
     }
 
+    // 1. Lấy giá gốc trước khi gửi
+    const rawTotal = cartTotal(); 
+
+    // 2. Lấy thêm PromoCode từ giao diện
     const dto = {
-      ShippingAddress: els.checkoutShipping?.value.trim() || "",
-      PaymentMethod: els.checkoutPayment?.value || "vnpay",
-      OrderItems: items.map(({ product, quantity }) => ({
+      shippingAddress: els.checkoutShipping?.value.trim() || "",
+      paymentMethod: els.checkoutPayment?.value || "vnpay",
+      promoCode: document.getElementById("checkoutStrategy")?.value || "none", // Đổi thành promoCode (p thường)
+      orderItems: items.map(({ product, quantity }) => ({
         ProductId: product.ProductId,
         Quantity: Number(quantity),
         Price: Number(product.Price),
@@ -279,7 +287,7 @@
 
     const order = result.Order || result.order || {};
     const orderId = order.OrderId ?? order.orderId ?? "?";
-    const total = order.TotalPrice ?? order.totalPrice ?? 0;
+    const total = order.TotalPrice ?? order.totalPrice ?? 0; // Giá cuối cùng từ API
     const orderDate = order.OrderDate ?? order.orderDate;
     const paymentMsg = result.PaymentMessage || result.paymentMessage || "VNPay (Adapter)";
 
@@ -302,6 +310,29 @@
     }
     if (els.summaryTotal) els.summaryTotal.textContent = money(total);
     if (els.summaryPayment) els.summaryPayment.textContent = paymentMsg;
+
+    // 3. Xử lý hiển thị Tạm tính và Giảm giá (Strategy Pattern)
+    const elSubtotal = document.getElementById("summarySubtotal");
+    const elDiscount = document.getElementById("summaryDiscount");
+    
+    if (elSubtotal) elSubtotal.textContent = money(rawTotal);
+    
+    if (elDiscount) {
+      // Vì hệ thống của bạn có Decorator (VAT 10%) nên giá total có thể cao hơn rawTotal
+      // Ta tính riêng phần Discount: Nếu chọn vip20 thì discount là 20% của rawTotal
+      let discountValue = 0;
+      if (dto.promoCode === "vip20") {
+        discountValue = rawTotal * 0.2; 
+      }
+      
+      if (discountValue > 0) {
+        elDiscount.textContent = "-" + money(discountValue);
+        elDiscount.className = "text-success fw-bold";
+      } else {
+        elDiscount.textContent = "0 ₫";
+        elDiscount.className = "text-muted";
+      }
+    }
 
     if (els.invoiceItems && order.OrderItems) {
       const itemsHtml = (order.OrderItems || []).map(oi => {
@@ -330,7 +361,6 @@
     }
     els.orderSection?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
-
   // Events
   els.btnReloadProducts?.addEventListener("click", () => loadProducts());
   els.btnLogin?.addEventListener("click", () => login().catch(e => setMsg(els.authMsg, e.message, "error")));
@@ -345,7 +375,16 @@
       setMsg(els.orderMsg, "Giỏ hàng trống.", "error");
       return;
     }
-    if (els.checkoutSubtotalLabel) els.checkoutSubtotalLabel.textContent = money(cartTotal());
+    
+    // Tính lại giá tạm tính ngay khi mở Modal
+    if (els.checkoutSubtotalLabel) {
+      const raw = cartTotal();
+      const strategy = els.checkoutStrategy?.value || "none";
+      let finalSub = raw;
+      if (strategy === "vip20") finalSub = raw * 0.8;
+      els.checkoutSubtotalLabel.textContent = money(finalSub);
+    }
+    
     const modalEl = document.getElementById("checkoutModal");
     if (modalEl && window.bootstrap) {
       new window.bootstrap.Modal(modalEl).show();
@@ -396,6 +435,20 @@
       state.cart.set(id, entry);
       renderCart();
     }
+  });
+
+  els.checkoutStrategy?.addEventListener("change", () => {
+    if (!els.checkoutSubtotalLabel) return;
+    const raw = cartTotal();
+    const strategy = els.checkoutStrategy.value;
+    let finalSub = raw;
+    
+    // Nếu chọn vip20 thì giảm 20%
+    if (strategy === "vip20") {
+      finalSub = raw * 0.8; 
+    }
+    
+    els.checkoutSubtotalLabel.textContent = money(finalSub);
   });
 
   // Init

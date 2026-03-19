@@ -39,8 +39,10 @@ namespace TH1.Patterns.Builder
 
         public Order Build()
         {
-            _order.OrderDate = DateTime.UtcNow;
-            return _order;
-        }
+            Order result = _order;
+            result.OrderDate = DateTime.UtcNow;
+            _order = new Order(); // Reset builder để dùng cho lần sau
+            return result;
+        }   
     }
 }

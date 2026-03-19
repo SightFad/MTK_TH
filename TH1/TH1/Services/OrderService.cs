@@ -5,7 +5,7 @@ using TH1.Patterns.Builder;
 using TH1.Patterns.AbstractFactory;
 using TH1.Patterns.Singleton;
 using TH1.Patterns.Observer;
-using TH1.Patterns.Strategy; // Thêm Strategy namespace
+using TH1.Patterns.Strategy;
 
 namespace TH1.Services
 {
@@ -14,7 +14,8 @@ namespace TH1.Services
         private readonly IOrderRepository _orderRepository;
         private readonly IProductRepository _productRepository;
         private readonly IOrderBuilder _orderBuilder;
-        private readonly IDiscountStrategy _discountStrategy; // Inject Strategy
+        
+        // Đã XÓA dòng private readonly IDiscountStrategy _discountStrategy;
 
         private readonly List<IObserver> _observers = new List<IObserver>();
 
@@ -22,22 +23,17 @@ namespace TH1.Services
             IOrderRepository orderRepository, 
             IProductRepository productRepository, 
             IOrderBuilder orderBuilder, 
-            IDiscountStrategy discountStrategy, // Đăng ký qua DI
+            // Đã XÓA IDiscountStrategy ra khỏi tham số constructor
             IEnumerable<IObserver> injectedObservers) 
         {
             _orderRepository = orderRepository;
             _productRepository = productRepository;
             _orderBuilder = orderBuilder;
-            _discountStrategy = discountStrategy;
 
-            // 1. Gắn các Observer từ DI
             foreach (var observer in injectedObservers)
             {
                 Attach(observer);
             }
-
-            // 2. Gắn LoggerService thủ công
-            // Lưu ý: Đảm bảo class LoggerService của bạn đã "public class LoggerService : IObserver"
             Attach(LoggerService.Instance); 
         }
 
@@ -68,8 +64,10 @@ namespace TH1.Services
                 .SetOrderItems(createOrderDto.OrderItems)
                 .Build();
 
-            // 3. Áp dụng STRATEGY PATTERN để tính giá đã giảm
-            order.TotalPrice = _discountStrategy.ApplyDiscount(order.TotalPrice);
+            // 3. Áp dụng STRATEGY PATTERN DYNAMIC thông qua Factory
+            // Lấy PromoCode từ UI gửi lên để chọn chiến lược tính tiền
+            var strategy = DiscountStrategyFactory.GetStrategy(createOrderDto.PromoCode);
+            order.TotalPrice = strategy.ApplyDiscount(order.TotalPrice);
 
             // 4. Gọi OBSERVER PATTERN để báo tin
             Notify(userId, $"Đơn hàng mới đã được tạo với tổng giá trị: {order.TotalPrice}.");
@@ -91,6 +89,7 @@ namespace TH1.Services
             });
         }
 
+        // ... Các hàm GetOrderHistory và GetAllOrders giữ nguyên như cũ ...
         public async Task<IEnumerable<OrderDto>> GetOrderHistory(int userId)
         {
             var orders = await _orderRepository.GetOrdersByUserIdAsync(userId);
