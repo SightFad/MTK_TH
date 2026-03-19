@@ -6,11 +6,8 @@ namespace TH1.Repositories
 {
     public class ProductRepository : GenericRepository<Product>, IProductRepository
     {
-        private readonly DataContext _context;
-
         public ProductRepository(DataContext context) : base(context)
         {
-            _context = context;
         }
 
         public async Task<bool> IsInStockAsync(int productId, int quantity)

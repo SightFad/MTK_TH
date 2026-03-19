@@ -11,6 +11,8 @@ using TH1.Patterns.Decorator;
 using TH1.Patterns.Facade;
 using TH1.Repositories;
 using TH1.Services;
+using TH1.Patterns.Observer;
+using TH1.Patterns.Strategy;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,7 +48,11 @@ builder.Services.AddTransient<IOrderBuilder, OrderBuilder>();
 // A choice has to be made for the default notification factory
 builder.Services.AddTransient<INotificationFactory, EmailNotificationFactory>();
 
+//observer pattern
 builder.Services.AddScoped<IObserver, NotificationObserver>();
+
+//strategy pattern
+builder.Services.AddScoped<IDiscountStrategy, NoDiscount>();
 
 // Adapter Pattern (VNPay SDK -> IPaymentService)
 builder.Services.AddSingleton<VnPaySdk>();

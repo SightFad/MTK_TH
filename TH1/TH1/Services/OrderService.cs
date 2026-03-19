@@ -5,6 +5,7 @@ using TH1.Patterns.Builder;
 using TH1.Patterns.AbstractFactory;
 using TH1.Patterns.Singleton;
 using TH1.Patterns.Observer;
+using TH1.Patterns.Strategy; // Thêm Strategy namespace
 
 namespace TH1.Services
 {
@@ -13,6 +14,7 @@ namespace TH1.Services
         private readonly IOrderRepository _orderRepository;
         private readonly IProductRepository _productRepository;
         private readonly IOrderBuilder _orderBuilder;
+        private readonly IDiscountStrategy _discountStrategy; // Inject Strategy
 
         private readonly List<IObserver> _observers = new List<IObserver>();
 
@@ -20,20 +22,23 @@ namespace TH1.Services
             IOrderRepository orderRepository, 
             IProductRepository productRepository, 
             IOrderBuilder orderBuilder, 
-            IEnumerable<IObserver> injectedObservers) // Tự động lấy các Observer từ DI
+            IDiscountStrategy discountStrategy, // Đăng ký qua DI
+            IEnumerable<IObserver> injectedObservers) 
         {
             _orderRepository = orderRepository;
             _productRepository = productRepository;
             _orderBuilder = orderBuilder;
+            _discountStrategy = discountStrategy;
 
-            // 1. Gắn các Observer được quản lý bởi DI (ví dụ: NotificationObserver)
+            // 1. Gắn các Observer từ DI
             foreach (var observer in injectedObservers)
             {
                 Attach(observer);
             }
 
-            // 2. Gắn thủ công LoggerService (vì nó là Singleton tĩnh, không qua DI)
-            Attach(LoggerService.Instance);
+            // 2. Gắn LoggerService thủ công
+            // Lưu ý: Đảm bảo class LoggerService của bạn đã "public class LoggerService : IObserver"
+            Attach(LoggerService.Instance); 
         }
 
         public void Attach(IObserver observer)
@@ -63,6 +68,10 @@ namespace TH1.Services
                 .SetOrderItems(createOrderDto.OrderItems)
                 .Build();
 
+            // 3. Áp dụng STRATEGY PATTERN để tính giá đã giảm
+            order.TotalPrice = _discountStrategy.ApplyDiscount(order.TotalPrice);
+
+            // 4. Gọi OBSERVER PATTERN để báo tin
             Notify(userId, $"Đơn hàng mới đã được tạo với tổng giá trị: {order.TotalPrice}.");
 
             return Task.FromResult(new OrderDto
@@ -87,18 +96,10 @@ namespace TH1.Services
             var orders = await _orderRepository.GetOrdersByUserIdAsync(userId);
             return orders.Select(o => new OrderDto
             {
-                OrderId = o.OrderId,
-                UserId = o.UserId,
-                OrderDate = o.OrderDate,
-                TotalPrice = o.TotalPrice,
-                ShippingAddress = o.ShippingAddress,
-                PaymentMethod = o.PaymentMethod,
+                OrderId = o.OrderId, UserId = o.UserId, OrderDate = o.OrderDate, TotalPrice = o.TotalPrice,
+                ShippingAddress = o.ShippingAddress, PaymentMethod = o.PaymentMethod,
                 OrderItems = o.OrderItems.Select(oi => new OrderItemDto
-                {
-                    ProductId = oi.ProductId,
-                    Quantity = oi.Quantity,
-                    Price = oi.Price
-                }).ToList()
+                { ProductId = oi.ProductId, Quantity = oi.Quantity, Price = oi.Price }).ToList()
             });
         }
 
@@ -107,18 +108,10 @@ namespace TH1.Services
             var orders = await _orderRepository.GetAllOrders(); 
             return orders.Select(o => new OrderDto
             {
-                OrderId = o.OrderId,
-                UserId = o.UserId,
-                OrderDate = o.OrderDate,
-                TotalPrice = o.TotalPrice,
-                ShippingAddress = o.ShippingAddress,
-                PaymentMethod = o.PaymentMethod,
+                OrderId = o.OrderId, UserId = o.UserId, OrderDate = o.OrderDate, TotalPrice = o.TotalPrice,
+                ShippingAddress = o.ShippingAddress, PaymentMethod = o.PaymentMethod,
                 OrderItems = o.OrderItems.Select(oi => new OrderItemDto
-                {
-                    ProductId = oi.ProductId,
-                    Quantity = oi.Quantity,
-                    Price = oi.Price
-                }).ToList()
+                { ProductId = oi.ProductId, Quantity = oi.Quantity, Price = oi.Price }).ToList()
             });
         }
     }

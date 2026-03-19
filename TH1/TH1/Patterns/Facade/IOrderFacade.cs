@@ -2,8 +2,8 @@ using TH1.DTOs;
 using TH1.Data;
 using TH1.Models;
 using TH1.Patterns.Adapter;
-using TH1.Patterns.AbstractFactory;
 using TH1.Patterns.Singleton;
+using TH1.Patterns.Command; // Đảm bảo import Command
 using TH1.Repositories;
 using TH1.Services;
 
@@ -20,20 +20,18 @@ namespace TH1.Patterns.Facade
         private readonly IProductRepository _productRepository;
         private readonly IPaymentService _paymentService;
         private readonly DataContext _dbContext;
-        private readonly INotificationFactory _notificationFactory;
 
+        // Đã xóa INotificationFactory vì việc thông báo nay đã được Observer trong OrderService lo liệu
         public OrderFacade(
             IOrderService orderService,
             IProductRepository productRepository,
             IPaymentService paymentService,
-            DataContext dbContext,
-            INotificationFactory notificationFactory)
+            DataContext dbContext)
         {
             _orderService = orderService;
             _productRepository = productRepository;
             _paymentService = paymentService;
             _dbContext = dbContext;
-            _notificationFactory = notificationFactory;
         }
 
         public async Task<OrderResult> PlaceOrderFullProcess(int userId, CreateOrderDto dto)
@@ -43,7 +41,7 @@ namespace TH1.Patterns.Facade
             LoggerService.Instance.Log("Toàn bộ quy trình được quản lý bởi Facade");
             steps.Add("Facade Pattern: Toàn bộ quy trình đặt hàng được điều phối bởi OrderFacade.PlaceOrderFullProcess.");
 
-            // 1. Kiểm tra kho bằng Repository mới cập nhật
+            // 1. Kiểm tra kho bằng Repository
             foreach (var item in dto.OrderItems)
             {
                 if (!await _productRepository.IsInStockAsync(item.ProductId, item.Quantity))
@@ -51,17 +49,18 @@ namespace TH1.Patterns.Facade
                     throw new Exception($"Sản phẩm ID {item.ProductId} không đủ hàng.");
                 }
             }
-            steps.Add("Repository Pattern: Đã kiểm tra tồn kho sản phẩm thông qua ProductRepository.");
+            steps.Add("Repository Pattern: Đã kiểm tra tồn kho sản phẩm.");
 
-            // 2. Tính tổng giá qua Decorator (OrderService được bọc bởi TaxOrderDecorator trong DI)
-            var calculatedOrder = await _orderService.CreateOrder(userId, dto);
-            LoggerService.Instance.Log("Đã tính giá qua Decorator (bao gồm thuế/giảm giá)");
-            steps.Add("Builder Pattern: OrderBuilder đã tạo Order và OrderItems từ CreateOrderDto.");
-            steps.Add("Decorator Pattern: TaxOrderDecorator đã tính TotalPrice (gồm thuế/giảm giá) dựa trên Order ban đầu.");
+            // 2. Sử dụng COMMAND PATTERN thay vì gọi Service trực tiếp
+            var placeOrderCmd = new PlaceOrderCommand(_orderService, userId, dto);
+            var calculatedOrder = await placeOrderCmd.ExecuteAsync();
+            
+            steps.Add("Command Pattern: Đã bọc yêu cầu đặt hàng qua PlaceOrderCommand.");
+            steps.Add("Builder & Strategy Pattern: Đã build đơn hàng và áp dụng giảm giá.");
+            steps.Add("Observer Pattern: NotificationObserver đã gửi tin báo đơn hàng mới.");
 
             // 3. Thanh toán thông qua Adapter
             var paymentResult = _paymentService.Pay(calculatedOrder.TotalPrice);
-            LoggerService.Instance.Log("Đã gọi Adapter để kết nối VNPay");
             steps.Add($"Adapter Pattern: VnPayAdapter đã gọi VnPaySdk để thanh toán. Kết quả: {paymentResult}");
 
             if (string.IsNullOrWhiteSpace(paymentResult))
@@ -69,12 +68,12 @@ namespace TH1.Patterns.Facade
                 throw new Exception("Thanh toán thất bại.");
             }
 
-            // 4. Lưu Orders + OrderItems vào DB thông qua DbContext
+            // 4. Lưu vào Database
             var orderEntity = new Order
             {
                 UserId = userId,
                 OrderDate = DateTime.UtcNow,
-                TotalPrice = calculatedOrder.TotalPrice,
+                TotalPrice = calculatedOrder.TotalPrice, // Giá đã được Strategy tính lại
                 ShippingAddress = dto.ShippingAddress,
                 PaymentMethod = dto.PaymentMethod,
                 OrderItems = dto.OrderItems.Select(i => new OrderItem
@@ -89,41 +88,24 @@ namespace TH1.Patterns.Facade
 
             _dbContext.Orders.Add(orderEntity);
             await _dbContext.SaveChangesAsync();
-            steps.Add("Persistence: Đã lưu Order và OrderItems vào database Th1Db (bảng Orders, OrderItems).");
 
-            // 5. Trừ kho hàng thông qua Repository
+            // 5. Trừ kho hàng 
             foreach (var item in dto.OrderItems)
             {
                 await _productRepository.UpdateStockAsync(item.ProductId, -item.Quantity);
             }
 
-            await _dbContext.SaveChangesAsync(); // Lưu tất cả thay đổi kho
+            await _dbContext.SaveChangesAsync(); 
             await transaction.CommitAsync();
+            steps.Add("Persistence: Đã lưu Order và OrderItems vào database Th1Db thành công.");
 
-            // 6. Gửi thông báo qua Abstract Factory
-            var notification = _notificationFactory.CreateNotification();
-            notification.SendOrderSuccessNotification("user@example.com"); // Demo: email giả lập
-            var notificationMessage = "Abstract Factory: EmailNotificationFactory đã gửi email xác nhận đơn hàng.";
-            steps.Add(notificationMessage);
-            LoggerService.Instance.Log(notificationMessage);
-
-            LoggerService.Instance.Log("Toàn bộ quy trình được quản lý bởi Facade");
-
-            // 7. Trả về kết quả giàu thông tin cho UI
             var orderDto = new OrderDto
             {
-                OrderId = orderEntity.OrderId,
-                UserId = orderEntity.UserId,
-                OrderDate = orderEntity.OrderDate,
-                TotalPrice = orderEntity.TotalPrice,
-                ShippingAddress = orderEntity.ShippingAddress,
+                OrderId = orderEntity.OrderId, UserId = orderEntity.UserId, OrderDate = orderEntity.OrderDate,
+                TotalPrice = orderEntity.TotalPrice, ShippingAddress = orderEntity.ShippingAddress,
                 PaymentMethod = orderEntity.PaymentMethod,
                 OrderItems = orderEntity.OrderItems.Select(oi => new OrderItemDto
-                {
-                    ProductId = oi.ProductId,
-                    Quantity = oi.Quantity,
-                    Price = oi.Price
-                }).ToList()
+                { ProductId = oi.ProductId, Quantity = oi.Quantity, Price = oi.Price }).ToList()
             };
 
             return new OrderResult
@@ -131,7 +113,7 @@ namespace TH1.Patterns.Facade
                 Order = orderDto,
                 Steps = steps,
                 PaymentMessage = paymentResult,
-                NotificationMessage = notificationMessage
+                NotificationMessage = "Observer Pattern: Email xác nhận đã được gửi ngầm thành công."
             };
         }
     }
