@@ -1,0 +1,4 @@
+# File log và dữ liệu tạm
+*.log
+log.txt 
+project_tree.txt 
